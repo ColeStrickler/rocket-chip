@@ -9,7 +9,7 @@ import freechips.rocketchip.devices.tilelink.{BuiltInDevices, HasBuiltInDevicePa
 import freechips.rocketchip.tilelink.{
   ReplicatedRegion, HasTLBusParams, HasRegionReplicatorParams, TLBusWrapper,
   TLBusWrapperInstantiationLike, RegionReplicator, TLXbar, TLInwardNode,
-  TLOutwardNode, ProbePicker, TLEdge, TLFIFOFixer
+  TLOutwardNode, ProbePicker, TLEdge, TLFIFOFixer, TLWidthWidget
 }
 import freechips.rocketchip.util.Location
 import subsystem.rme.RME
@@ -53,6 +53,11 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     replicator.map(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all) :*=* _.node)
         .getOrElse(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all))
   
+  /* 
+    Is this the correct way to do this?
+  */
+  coupleTo("rme-manager") {rme.get.manager := TLWidthWidget(this.beatBytes) := _ }
+
   val outwardNode: TLOutwardNode = rme.get.node := ProbePicker() :*= xbar.node
   def busView: TLEdge = xbar.node.edges.in.head
 
