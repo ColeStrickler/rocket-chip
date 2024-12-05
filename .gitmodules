@@ -11,3 +11,6 @@
 	path = dependencies/diplomacy
 	url = https://github.com/chipsalliance/diplomacy.git
 	branch = master
+[submodule "src/main/scala/subsystem/rme"]
+	path = src/main/scala/subsystem/rme
+	url = git@github.com:ColeStrickler/RME-Firesim.git
