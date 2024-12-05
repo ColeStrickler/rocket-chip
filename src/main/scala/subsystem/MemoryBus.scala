@@ -12,6 +12,8 @@ import freechips.rocketchip.tilelink.{
   TLOutwardNode, ProbePicker, TLEdge, TLFIFOFixer
 }
 import freechips.rocketchip.util.Location
+import subsystem.rme.RME
+import subsystem.rme.RelMemParams
 
 /** Parameterization of the memory-side bus created for each memory channel */
 case class MemoryBusParams(
@@ -44,12 +46,14 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     addressPrefixNexusNode
   }
 
+  val rme = Some(new RME(RelMemParams(0x2000000,  0xf0000000)))
+
   private val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
   val inwardNode: TLInwardNode =
     replicator.map(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all) :*=* _.node)
         .getOrElse(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all))
-
-  val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node
+  
+  val outwardNode: TLOutwardNode = rme.get.node := ProbePicker() :*= xbar.node
   def busView: TLEdge = xbar.node.edges.in.head
 
   val builtInDevices: BuiltInDevices = BuiltInDevices.attach(params, outwardNode)

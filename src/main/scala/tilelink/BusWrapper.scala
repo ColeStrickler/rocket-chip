@@ -10,6 +10,7 @@ import org.chipsalliance.diplomacy._
 import org.chipsalliance.diplomacy.bundlebridge._
 import org.chipsalliance.diplomacy.lazymodule._
 import org.chipsalliance.diplomacy.nodes._
+import subsystem.rme._
 
 import freechips.rocketchip.diplomacy.{AddressSet, NoHandle, NodeHandle, NodeBinding}
 
@@ -48,6 +49,7 @@ abstract class TLBusWrapper(params: HasTLBusParams, val busName: String)(implici
     extends ClockDomain
     with HasTLBusParams
     with CanHaveBuiltInDevices
+    with CanHaveRME
 {
   private val clockGroupAggregator = LazyModule(new ClockGroupAggregator(busName){ override def shouldBeInlined = true }).suggestName(busName + "_clock_groups")
   private val clockGroup = LazyModule(new ClockGroup(busName){ override def shouldBeInlined = true })
@@ -267,6 +269,7 @@ case class AddressAdjusterWrapperParams(
 }
 
 class AddressAdjusterWrapper(params: AddressAdjusterWrapperParams, name: String)(implicit p: Parameters) extends TLBusWrapper(params, name) {
+  val rme = None
   private val address_adjuster = params.replication.map { r => LazyModule(new AddressAdjuster(r, params.forceLocal, params.localBaseAddressDefault, params.ordered)) }
   private val viewNode = TLIdentityNode()
   val inwardNode: TLInwardNode = address_adjuster.map(_.node :*=* TLFIFOFixer(params.policy) :*=* viewNode).getOrElse(viewNode)
@@ -297,6 +300,7 @@ case class TLJBarWrapperParams(
 }
 
 class TLJBarWrapper(params: TLJBarWrapperParams, name: String)(implicit p: Parameters) extends TLBusWrapper(params, name) {
+  val rme = None
   private val jbar = LazyModule(new TLJbar)
   val inwardNode: TLInwardNode = jbar.node
   val outwardNode: TLOutwardNode = jbar.node
