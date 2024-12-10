@@ -46,7 +46,7 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     addressPrefixNexusNode
   }
 
-  val rme = Some(new RME(RelMemParams(0x2000000,  0xf0000000)))
+  val rme = Some(LazyModule(new RME(RelMemParams(0x2000000,  0x70000000))))
 
   private val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
   val inwardNode: TLInwardNode =
@@ -56,9 +56,9 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
   /* 
     Is this the correct way to do this?
   */
-  coupleTo("rme-manager") {rme.get.manager := TLWidthWidget(this.beatBytes) := _ }
+  //coupleTo("rme-manager") {rme.get.manager := TLWidthWidget(this.beatBytes) := _ }
 
-  val outwardNode: TLOutwardNode = rme.get.node := ProbePicker() :*= xbar.node
+  val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker() :*= xbar.node
   def busView: TLEdge = xbar.node.edges.in.head
 
   val builtInDevices: BuiltInDevices = BuiltInDevices.attach(params, outwardNode)
