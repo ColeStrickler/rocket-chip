@@ -389,7 +389,7 @@ trait BindingScope
       
       val reserved = bindings.map.filterKeys{case (p) => p == "reserved" }
       val reservedRange = reserved.get("reserved").getOrElse(Seq())
-      val ranges = reservedRange.flatMap{case range => Seq(range.value.asInstanceOf[ResourceAddress])}
+      val ranges = reservedRange.flatMap{case range => Seq(range.value.asInstanceOf[ResourceMapping])}
       assert(ranges.size == 1)
       val resMapping : Map[String, Seq[ResourceValue]] = Map(
         "#address-cells" -> ofInt(2),
@@ -399,17 +399,17 @@ trait BindingScope
       val addrRange = ranges(0)
       assert(addrRange.address.size == 1)
       val addrSet = addrRange.address(0)
-
+      val regionString = "< 0x" + addrSet.base.toString(16) + " 0x" + addrSet.mask.toString(16) + ">"
       val reservedRegionMap : Map[String, Seq[ResourceValue]] = Map(
-        "reg" -> Seq(addrRange),
+        "reg" -> Seq(ResourceString(regionString)),
         "no-map" -> Seq(),
       )
 
       val resRegionDesc = Description("reserved-memory/" + "memory@" + addrSet.base.toString(16), reservedRegionMap)
       val reservedMemDesc = Description("reserved-memory", resMapping)
-
+      val dummyDev = new SimpleDevice("", Seq("dummy")) 
       descs += ((ResourceAnchors.root,reservedMemDesc ))
-      descs += ((ResourceAnchors.root, resRegionDesc))
+      descs += ((dummyDev, resRegionDesc))
       Seq(reservedMemDesc, resRegionDesc)
     }
 
