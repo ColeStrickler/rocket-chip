@@ -8,6 +8,7 @@ import scala.collection.immutable.{ListMap, SortedMap}
 import scala.collection.mutable.HashMap
 import freechips.rocketchip.diplomacy.{AddressSet, AddressRange}
 import org.chipsalliance.diplomacy.lazymodule.{LazyModule}
+import scala.collection.immutable.ArraySeq.ofInt
 
 sealed trait ResourceValue
 
@@ -75,7 +76,7 @@ abstract class Device
   /* This can be overriden to make one device relative to another */
 
   def parent: Option[Device] = None
-
+  var hasReservedRange = false
   /** make sure all derived devices have an unique label */
   val label = "L" + Device.index.toString
   Device.index = Device.index + 1
@@ -216,7 +217,7 @@ class SimpleDevice(val devname: String, devcompat: Seq[String]) extends Device
 
     deviceNamePlusAddress = name
 
-    Description(name, ListMap() ++ compat ++ int ++ clocks ++ names ++ regs ++ reservedBindings)
+    Description(name, ListMap() ++ compat ++ int ++ clocks ++ names ++ regs)
   }
 }
 
@@ -354,6 +355,8 @@ trait BindingScope
   /** Generate the device tree. */
   def bindingTree: ResourceMap = {
     eval
+    def ofInt(x: Int) = Seq(ResourceInt(BigInt(x)))
+
     val map: Map[Device, ResourceBindings] = getResourceBindingsMap.map
     val descs: HashMap[Device, Description] = HashMap.empty
     def getDesc(dev: Device): Description = {
@@ -371,6 +374,49 @@ trait BindingScope
         desc
       }
     }
+
+    def checkReserved(dev: Device): Seq[Description] = {
+      eval
+
+      if (!dev.hasReservedRange)
+      {
+        return Seq()
+      }
+
+      val map: Map[Device, ResourceBindings] = getResourceBindingsMap.map  
+      val bindings = map.lift(dev).getOrElse(ResourceBindings())
+      val Description(name, mapping) = dev.describe(bindings)  
+      
+      val reserved = bindings.map.filterKeys{case (p) => p == "reserved" }
+      val reservedRange = reserved.get("reserved").getOrElse(Seq())
+      val ranges = reservedRange.flatMap{case range => Seq(range.value.asInstanceOf[ResourceAddress])}
+      assert(ranges.size == 1)
+      val resMapping : Map[String, Seq[ResourceValue]] = Map(
+        "#address-cells" -> ofInt(2),
+        "#size-cells" -> ofInt(2),
+      )
+      
+      val addrRange = ranges(0)
+      assert(addrRange.address.size == 1)
+      val addrSet = addrRange.address(0)
+
+      val reservedRegionMap : Map[String, Seq[ResourceValue]] = Map(
+        "reg" -> Seq(addrRange),
+        "no-map" -> Seq(),
+      )
+
+      val resRegionDesc = Description("reserved-memory/" + "memory@" + addrSet.base.toString(16), reservedRegionMap)
+      val reservedMemDesc = Description("reserved-memory", resMapping)
+
+      descs += ((ResourceAnchors.root,reservedMemDesc ))
+      descs += ((ResourceAnchors.root, resRegionDesc))
+      Seq(reservedMemDesc, resRegionDesc)
+    }
+
+    
+    val reservedRegions = map.keys.flatMap(checkReserved )
+
+    //map.keys.foreach()
     map.keys.foreach(getDesc)
     val tree = makeTree(descs.toList.flatMap { case (d, Description(name, mapping)) =>
       val tokens = name.split("/").toList

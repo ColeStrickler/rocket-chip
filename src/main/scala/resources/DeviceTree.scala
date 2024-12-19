@@ -16,7 +16,7 @@ object DTS
   def apply(res: ResourceValue): String = "/dts-v1/;\n\n" + helper(res, "", defaultCells).mkString("")
 
   private val nodeStartChars = (('a' to 'z') ++ ('A' to 'Z')).toSet
-  private val nodeChars = (('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ Seq(',', '.', '_', '+', '-', '@')).toSet
+  private val nodeChars = (('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9') ++ Seq(',', '.', '_', '+', '-', '@', ' ')).toSet
   def legalNode(x: String): Boolean =
     x == "/" || (!x.isEmpty && x.size < 48 && nodeStartChars.contains(x(0)) && x.forall(nodeChars.contains(_)))
 
