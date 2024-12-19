@@ -196,6 +196,11 @@ class SimpleDevice(val devname: String, devcompat: Seq[String]) extends Device
     val compat = optDef("compatible", devcompat.map(ResourceString(_))) // describe the list of compatiable devices
 
     val reg = resources.map.filterKeys(DiplomacyUtils.regFilter)
+
+    val reserved = resources.map.filterKeys{case (p) => p == "reserved" }
+
+    val reservedBindings = reserved.keys.flatMap{case s => reserved.get(s).getOrElse(List()).map { binding =>
+    (s, Seq(binding.value))}}
     val (named, bulk) = reg.partition { case (k, v) => DiplomacyUtils.regName(k).isDefined }
     // We need to be sure that each named reg has exactly one AddressRange associated to it
     named.foreach {
@@ -211,7 +216,7 @@ class SimpleDevice(val devname: String, devcompat: Seq[String]) extends Device
 
     deviceNamePlusAddress = name
 
-    Description(name, ListMap() ++ compat ++ int ++ clocks ++ names ++ regs)
+    Description(name, ListMap() ++ compat ++ int ++ clocks ++ names ++ regs ++ reservedBindings)
   }
 }
 
