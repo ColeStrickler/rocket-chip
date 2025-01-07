@@ -48,8 +48,8 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
   }
   //val rme = None
   // LETS TRY TO CHANGE THE RME BASE ADDRESS, WE GOT ERROR ON BOOT last time
- val rme = Some(LazyModule(new RME(RelMemParams(0x2000000,  0xe0000000L, this))))
-
+ val rme = Some(LazyModule(new RME(RelMemParams(0x2000000,  0x90000000L, this))))
+  
   val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
   val inwardNode: TLInwardNode =
     replicator.map(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all) :*=* _.node)
@@ -70,8 +70,8 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
       Can we make the :*= into a := ?
      */
     
-  //val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker() :*= xbar.node
   val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker() :*= xbar.node
+  //val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node
    //val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node
   // coupleTo("rme-manager"){ rme.get.manager := TLFragmenter(beatBytes, blockBytes) := _ }
   def busView: TLEdge = xbar.node.edges.in.head

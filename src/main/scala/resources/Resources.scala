@@ -48,6 +48,7 @@ object ResourceInt {
   def apply(x: Double) = new ResourceInt(x)
 }
 
+
 /** A reference pointing to another device in DTS (eg: interrupt to interrupt controller).
   * @param value        the label (String) of the device.
   */
@@ -369,6 +370,8 @@ trait BindingScope
           case None => name
           case Some(parent) => getDesc(parent).name + "/" + name
         }
+
+        println(fullName)
         val desc = Description(fullName, mapping)
         descs += ((dev, desc))
         desc
@@ -389,39 +392,58 @@ trait BindingScope
       
       val reserved = bindings.map.filterKeys{case (p) => p == "reserved" }
       val reservedRange = reserved.get("reserved").getOrElse(Seq())
-      val ranges = reservedRange.flatMap{case range => Seq(range.value.asInstanceOf[ResourceMapping])}
+      val ranges = reservedRange.flatMap{case range => Seq(range.value.asInstanceOf[ResourceAddress])}
       assert(ranges.size == 1)
-      val resMapping : Map[String, Seq[ResourceValue]] = Map(
-        "#address-cells" -> ofInt(2),
-        "#size-cells" -> ofInt(2),
-      )
-      
       val addrRange = ranges(0)
       assert(addrRange.address.size == 1)
       val addrSet = addrRange.address(0)
-      val regionString = "< 0x" + addrSet.base.toString(16) + " 0x" + addrSet.mask.toString(16) + ">"
+      
+
+      val resMapping : Map[String, Seq[ResourceValue]] = Map(
+        "#address-cells" -> ofInt(2),
+        "#size-cells" -> ofInt(2), 
+        "ranges" -> Seq()
+        //"ranges" -> Seq(ResourceMapping(Seq(addrSet), 0, ResourcePermissions(true, true, false, true, true)))
+      )
+      
+      
+      
       val reservedRegionMap : Map[String, Seq[ResourceValue]] = Map(
-        "reg" -> Seq(ResourceString(regionString)),
+        "reg" -> Seq(addrRange),
         "no-map" -> Seq(),
       )
+     
 
       val resRegionDesc = Description("reserved-memory/" + "memory@" + addrSet.base.toString(16), reservedRegionMap)
       val reservedMemDesc = Description("reserved-memory", resMapping)
-      val dummyDev = new SimpleDevice("", Seq("dummy")) 
-      descs += ((ResourceAnchors.root,reservedMemDesc ))
+      val dummyDev = new SimpleDevice("", Seq("dummy"))
+      val dummyDev2 = new SimpleDevice("", Seq("dummy")) 
+      descs += ((dummyDev2,reservedMemDesc ))
       descs += ((dummyDev, resRegionDesc))
       Seq(reservedMemDesc, resRegionDesc)
     }
 
     
-    val reservedRegions = map.keys.flatMap(checkReserved )
+    map.keys.foreach(checkReserved)
 
     //map.keys.foreach()
     map.keys.foreach(getDesc)
+    val rootbindings = map.lift(ResourceAnchors.root).getOrElse(ResourceBindings())
+    val rootDesc = ResourceAnchors.root.describe(rootbindings)
+    println("\n\nrootDesc: " + rootDesc.toString() + "\n\n")
+    descs += ((ResourceAnchors.root, rootDesc))
+
     val tree = makeTree(descs.toList.flatMap { case (d, Description(name, mapping)) =>
+
       val tokens = name.split("/").toList
+      println(name)
+      println(tokens.toString())
+
       expand(tokens, Seq(ResourceMap(mapping, Seq(d.label)))) })
-    ResourceMap(SortedMap("/" -> tree))
+
+    //List(ResourceMap())
+    val mmap = ResourceMap(SortedMap("/" -> tree))
+    mmap
   }
 
   /** Generate the ResourceBindingsMap which stores each device's ResourceBindings
@@ -434,8 +456,8 @@ trait BindingScope
         seq.groupBy(_._1.key).mapValues(_.map(z => Binding(z._2, z._3)).distinct).toMap)).toMap)
   }
 
-  /** Collect resource addresses from tree. */
-  def collectResourceAddresses = collect(2, Nil, 0, bindingTree)
+  /** Collect resource addresses from tree. --> changed skiproot from 2 ->  */
+  def collectResourceAddresses = collect(0, Nil, 0, bindingTree)
 }
 
 object BindingScope
@@ -467,11 +489,18 @@ object ResourceAnchors
 {
   val root = new Device {
     def describe(resources: ResourceBindings): Description = {
+
+
+
+
+      println("\n\n\nROOT DESCRIBE\n\n\n")
+      println("\n\n\nROOT DESCRIBE\n\n\n")
+      def ofInt(x: Int) = Seq(ResourceInt(BigInt(x)))
       val width = resources("width").map(_.value)
       val model = resources("model").map(_.value)
       val compat = resources("compat").map(_.value)
       Description("/", Map(
-        "#address-cells" -> width,
+        "#address-cells" -> width,//width,
         "#size-cells"    -> width,
         "model"          -> model,
         "compatible"     -> compat))

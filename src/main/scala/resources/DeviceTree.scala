@@ -131,6 +131,7 @@ case class DTB(contents: Seq[Byte])
 object DTB
 {
   def apply(dts: String): DTB = {
+    println(dts)
     val instream = new ByteArrayInputStream(dts.getBytes("UTF-8"))
     val outstream = new ByteArrayOutputStream
     val proc = "dtc -O dtb" #< instream #> outstream
