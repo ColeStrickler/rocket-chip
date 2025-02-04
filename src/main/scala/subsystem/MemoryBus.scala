@@ -6,15 +6,13 @@ import org.chipsalliance.cde.config._
 import org.chipsalliance.diplomacy.lazymodule._
 
 import freechips.rocketchip.devices.tilelink.{BuiltInDevices, HasBuiltInDeviceParams, BuiltInErrorDeviceParams, BuiltInZeroDeviceParams}
-import freechips.rocketchip.tilelink.{
-  ReplicatedRegion, HasTLBusParams, HasRegionReplicatorParams, TLBusWrapper,
-  TLBusWrapperInstantiationLike, RegionReplicator, TLXbar, TLInwardNode,
-  TLOutwardNode, ProbePicker, TLEdge, TLFIFOFixer, TLWidthWidget, TLFragmenter
-}
+import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.Location
 import subsystem.rme.RME
 import subsystem.rme.RelMemParams
 import midas.targetutils.SynthesizePrintf
+import freechips.rocketchip.subsystem._
+import freechips.rocketchip.diplomacy.IdRange
 
 /** Parameterization of the memory-side bus created for each memory channel */
 case class MemoryBusParams(
@@ -47,8 +45,10 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     addressPrefixNexusNode
   }
   //val rme = None
-  // LETS TRY TO CHANGE THE RME BASE ADDRESS, WE GOT ERROR ON BOOT last time
- val rme = Some(LazyModule(new RME(RelMemParams(0x2000000,  0x90000000L, this))))
+ val rme = Some(LazyModule(new RME(RelMemParams())))
+  
+
+  
   
   val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
   val inwardNode: TLInwardNode =
@@ -56,6 +56,28 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
         .getOrElse(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all))
 
 
+  /*
+    We expand the range of source IDs available for the RME so we can multiply requests, and
+    send them concurrently
+  */
+  val numFetchUnits = 32
+  private val client = TLMasterParameters.v1(
+    name     = "TLSourceExpander",
+    sourceId = IdRange(0, numFetchUnits)
+    )
+  val node = (new TLAdapterNode(
+    clientFn  = { cp => 
+      // We erase all client information since we crush the source Ids
+      TLMasterPortParameters.v1(
+        clients = Seq(client.v1copy(requestFifo = cp.clients.exists(_.requestFifo))),
+        echoFields = cp.echoFields,
+        requestFields = cp.requestFields,
+        responseKeys = cp.responseKeys)
+    },
+    managerFn = { mp => mp.v1copy(managers = mp.managers.map(m => m.v1copy(fifoId = if (numFetchUnits==1) Some(0) else m.fifoId)))
+    }) {
+    //override def circuitIdentity = edges.in.map(_.client).forall(noShrinkRequired)
+  })
  
   
  // rme.get.manager :*= xbar.node
@@ -70,9 +92,10 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
       Can we make the :*= into a := ?
      */
     
+  
   val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker() :*= xbar.node
-  //val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node
-   //val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node
+  //val outwardNode: TLOutwardNode = rme.get.node :*= node :*= ProbePicker() :*= xbar.node
+  //val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node --> default
   // coupleTo("rme-manager"){ rme.get.manager := TLFragmenter(beatBytes, blockBytes) := _ }
   def busView: TLEdge = xbar.node.edges.in.head
 

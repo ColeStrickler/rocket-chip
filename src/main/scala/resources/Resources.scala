@@ -410,7 +410,7 @@ trait BindingScope
       
       val reservedRegionMap : Map[String, Seq[ResourceValue]] = Map(
         "reg" -> Seq(addrRange),
-        "no-map" -> Seq(),
+        //"no-map" -> Seq(),
       )
      
 

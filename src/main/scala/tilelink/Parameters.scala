@@ -603,6 +603,8 @@ class TLSlavePortParameters private(
   val anySupportHint       = !anySupportClaims.hint.none
 
   // Supporting Acquire means being routable for GrantAck
+  println(s"endSinkId $endSinkId, !anySupportAcquireB ${!anySupportAcquireB}\n")
+  println(s"(endSinkId == 0) == !anySupportAcquireB --> ${(endSinkId == 0) == !anySupportAcquireB}")
   require ((endSinkId == 0) == !anySupportAcquireB)
 
   // These return Option[TLSlaveParameters] for your convenience
@@ -779,6 +781,7 @@ object TLSlavePortParameters {
     responseFields: Seq[BundleFieldBase] = Nil,
     requestKeys:    Seq[BundleKeyBase]   = Nil) =
   {
+    println("TLSlavePortParameters endSinkId %d\n", endSinkId)
     new TLSlavePortParameters(
       slaves       = managers,
       channelBytes = TLChannelBeatBytes(beatBytes),
@@ -800,6 +803,7 @@ object TLManagerPortParameters {
     responseFields: Seq[BundleFieldBase] = Nil,
     requestKeys:    Seq[BundleKeyBase]   = Nil) =
   {
+    println("TLManagerPortParameters endSinkID %d\n", endSinkId)
     TLSlavePortParameters.v1(
       managers,
       beatBytes,
