@@ -80,6 +80,10 @@ class CustomBankAlloc(params: CustomBankAllocParams)(implicit p: Parameters) ext
         val lsfr = Module(new GaloisLFSR(4, Set(4,3)))
 
 
+        // i think we can leave return edges the same
+
+
+
       /*
         For incoming request:
         1. calculate set
@@ -89,7 +93,7 @@ class CustomBankAlloc(params: CustomBankAllocParams)(implicit p: Parameters) ext
         5. if entry is found in eviction fifo -> we can allocate it on a new bank and send to that bank
         6. if entry not found -> we need to allocate a new entry and then send to bank we allocate from
       */
-      val incoming_tag = 0.U
+      val incoming_tag = 0.U // get from incoming edges
       val incoming_set = 0.U // actually calculate
       val readWayEntries = bank_alloc_dir.read(incoming_set, true.B)
 
