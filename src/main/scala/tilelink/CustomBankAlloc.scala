@@ -14,6 +14,7 @@ import org.chipsalliance.diplomacy.lazymodule._
 import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
 import freechips.rocketchip.util.DescribedSRAM
 import _root_.freechips.rocketchip.util.DescribedSRAM
+import chisel3.util.random.GaloisLFSR
 
 
 
@@ -72,6 +73,13 @@ class CustomBankAlloc(params: CustomBankAllocParams)(implicit p: Parameters) ext
   class Impl extends LazyModuleImp(this) {
     
 
+        require(isPow2(params.cacheBanks), "params.cacheBanks is not a power of 2") // otherwise we will require extra logic. nBanks should always be a power of 2
+        val randomBankAlloc = RegInit(0.U(log2Ceil(params.cacheBanks).W))
+
+        // we can use an LSFR for pseudo random way allocation
+        val lsfr = Module(new GaloisLFSR(4, Set(4,3)))
+
+
       /*
         For incoming request:
         1. calculate set
@@ -111,7 +119,7 @@ class CustomBankAlloc(params: CustomBankAllocParams)(implicit p: Parameters) ext
         We can do this in two cycles
 
       */
-      eviction_fifo.io.deq.ready := (writeState ===  sReadReady) // write must be currently idling
+      eviction_fifo.io.deq.ready := (writeState === sReadReady) // write must be currently idling
 
 
       val sReadReady :: sWrite :: Nil = Enum(4)
