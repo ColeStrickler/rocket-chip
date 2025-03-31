@@ -13,6 +13,7 @@ import org.chipsalliance.diplomacy.lazymodule._
 
 import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
 import freechips.rocketchip.util.DescribedSRAM
+import _root_.freechips.rocketchip.util.DescribedSRAM
 
 
 
