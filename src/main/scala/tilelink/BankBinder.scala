@@ -2,11 +2,16 @@
 
 package freechips.rocketchip.tilelink
 
+import chisel3._
+import chisel3.util._
+
 import org.chipsalliance.cde.config._
 import org.chipsalliance.diplomacy._
 import org.chipsalliance.diplomacy.lazymodule._
 
 import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
+import freechips.rocketchip.util.DescribedSRAM
+
 
 case class BankBinderNode(mask: BigInt)(implicit valName: ValName) extends TLCustomNode
 {
