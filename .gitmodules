@@ -14,6 +14,6 @@
 [submodule "src/main/scala/subsystem/rme"]
 	path = src/main/scala/subsystem/rme
 	url = git@github.com:ColeStrickler/RME-Firesim.git
-[submodule "src/main/scala/tilelink/src/main/scala/tilelink/CustomBankAlloc"]
-	path = src/main/scala/tilelink/src/main/scala/tilelink/CustomBankAlloc
+[submodule "src/main/scala/tilelink/CustomBankAlloc"]
+	path = src/main/scala/tilelink/CustomBankAlloc
 	url = https://github.com/ColeStrickler/CustomBankAlloc.git
