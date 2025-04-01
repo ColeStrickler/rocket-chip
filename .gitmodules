@@ -16,4 +16,4 @@
 	url = git@github.com:ColeStrickler/RME-Firesim.git
 [submodule "src/main/scala/tilelink/CustomBankAlloc"]
 	path = src/main/scala/tilelink/CustomBankAlloc
-	url = https://github.com/ColeStrickler/CustomBankAlloc.git
+	url = git@github.com:ColeStrickler/CustomBankAlloc.git
