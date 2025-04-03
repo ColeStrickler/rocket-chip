@@ -13,6 +13,7 @@ import subsystem.rme.RelMemParams
 import midas.targetutils.SynthesizePrintf
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.diplomacy.IdRange
+import subsystem.rme.subsystem.rme.TLSourceExpander
 
 /** Parameterization of the memory-side bus created for each memory channel */
 case class MemoryBusParams(
@@ -60,26 +61,8 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     We expand the range of source IDs available for the RME so we can multiply requests, and
     send them concurrently
   */
-  val numFetchUnits = 32
-  private val client = TLMasterParameters.v1(
-    name     = "TLSourceExpander",
-    sourceId = IdRange(0, numFetchUnits)
-    )
-  val node = (new TLAdapterNode(
-    clientFn  = { cp => 
-      // We erase all client information since we crush the source Ids
-      TLMasterPortParameters.v1(
-        clients = Seq(client.v1copy(requestFifo = cp.clients.exists(_.requestFifo))),
-        echoFields = cp.echoFields,
-        requestFields = cp.requestFields,
-        responseKeys = cp.responseKeys)
-    },
-    managerFn = { mp => mp.v1copy(managers = mp.managers.map(m => m.v1copy(fifoId = if (numFetchUnits==1) Some(0) else m.fifoId)))
-    }) {
-    //override def circuitIdentity = edges.in.map(_.client).forall(noShrinkRequired)
-  })
- 
-  
+  val numFetchUnits = 16
+
  // rme.get.manager :*= xbar.node
 
 
@@ -92,8 +75,8 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
       Can we make the :*= into a := ?
      */
     
-  
-  val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker() :*= xbar.node
+ 
+  val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker() := TLSourceExpander(numFetchUnits).node :*= xbar.node
   //val outwardNode: TLOutwardNode = rme.get.node :*= node :*= ProbePicker() :*= xbar.node
   //val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node --> default
   // coupleTo("rme-manager"){ rme.get.manager := TLFragmenter(beatBytes, blockBytes) := _ }
