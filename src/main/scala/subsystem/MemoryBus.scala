@@ -46,12 +46,16 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     addressPrefixNexusNode
   }
   //val rme = None
- val rme = Some(LazyModule(new RME(RelMemParams())))
+
   
 
   
   
   val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
+
+
+ val rme = Some(LazyModule(new RME(RelMemParams())))
+
   val inwardNode: TLInwardNode =
     replicator.map(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all) :*=* _.node)
         .getOrElse(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all))
@@ -76,7 +80,7 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
      */
     
  
-  val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker() := TLSourceExpander(numFetchUnits).node :*= xbar.node
+  val outwardNode: TLOutwardNode = rme.get.node :*= TLSourceExpander(numFetchUnits*4).node :*= ProbePicker()  :*= xbar.node
   //val outwardNode: TLOutwardNode = rme.get.node :*= node :*= ProbePicker() :*= xbar.node
   //val outwardNode: TLOutwardNode = ProbePicker() :*= xbar.node --> default
   // coupleTo("rme-manager"){ rme.get.manager := TLFragmenter(beatBytes, blockBytes) := _ }
