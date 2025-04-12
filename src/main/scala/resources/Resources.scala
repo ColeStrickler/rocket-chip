@@ -75,7 +75,7 @@ abstract class Device
   /* This can be overriden to make one device relative to another */
 
   def parent: Option[Device] = None
-
+  
   /** make sure all derived devices have an unique label */
   val label = "L" + Device.index.toString
   Device.index = Device.index + 1
