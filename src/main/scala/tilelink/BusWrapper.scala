@@ -10,7 +10,7 @@ import org.chipsalliance.diplomacy._
 import org.chipsalliance.diplomacy.bundlebridge._
 import org.chipsalliance.diplomacy.lazymodule._
 import org.chipsalliance.diplomacy.nodes._
-
+import subsystem.rme._
 import freechips.rocketchip.diplomacy.{AddressSet, NoHandle, NodeHandle, NodeBinding}
 
 // TODO This class should be moved to package subsystem to resolve
@@ -48,6 +48,7 @@ abstract class TLBusWrapper(params: HasTLBusParams, val busName: String)(implici
     extends ClockDomain
     with HasTLBusParams
     with CanHaveBuiltInDevices
+    with CanHaveRME
 {
   private val clockGroupAggregator = LazyModule(new ClockGroupAggregator(busName){ override def shouldBeInlined = true }).suggestName(busName + "_clock_groups")
   private val clockGroup = LazyModule(new ClockGroup(busName){ override def shouldBeInlined = true })
@@ -55,7 +56,7 @@ abstract class TLBusWrapper(params: HasTLBusParams, val busName: String)(implici
   val clockNode = clockGroup.node
   val fixedClockNode = FixedClockBroadcast(fixedClockOpt) // device clocks attach here
   private val clockSinkNode = ClockSinkNode(List(ClockSinkParameters(take = fixedClockOpt)))
-
+  
   clockGroup.node := clockGroupAggregator.node
   fixedClockNode := clockGroup.node // first member of group is always domain's own clock
   clockSinkNode := fixedClockNode
@@ -268,7 +269,8 @@ case class AddressAdjusterWrapperParams(
 
 class AddressAdjusterWrapper(params: AddressAdjusterWrapperParams, name: String)(implicit p: Parameters) extends TLBusWrapper(params, name) {
   private val address_adjuster = params.replication.map { r => LazyModule(new AddressAdjuster(r, params.forceLocal, params.localBaseAddressDefault, params.ordered)) }
-  private val viewNode = TLIdentityNode()
+  private val viewNode = TLIdentityNode() 
+  val rme = None
   val inwardNode: TLInwardNode = address_adjuster.map(_.node :*=* TLFIFOFixer(params.policy) :*=* viewNode).getOrElse(viewNode)
   def outwardNode: TLOutwardNode = address_adjuster.map(_.node).getOrElse(viewNode)
   def busView: TLEdge = viewNode.edges.in.head
@@ -298,6 +300,7 @@ case class TLJBarWrapperParams(
 
 class TLJBarWrapper(params: TLJBarWrapperParams, name: String)(implicit p: Parameters) extends TLBusWrapper(params, name) {
   private val jbar = LazyModule(new TLJbar)
+  val rme = None
   val inwardNode: TLInwardNode = jbar.node
   val outwardNode: TLOutwardNode = jbar.node
   def busView: TLEdge = jbar.node.edges.in.head

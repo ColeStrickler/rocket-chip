@@ -38,6 +38,7 @@ case class SystemBusParams(
 class SystemBus(params: SystemBusParams, name: String = "system_bus")(implicit p: Parameters)
     extends TLBusWrapper(params, name)
 {
+  val rme = None
   private val replicator = params.replication.map(r => LazyModule(new RegionReplicator(r)))
   val prefixNode = replicator.map { r =>
     r.prefix := addressPrefixNexusNode
