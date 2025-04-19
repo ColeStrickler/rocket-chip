@@ -118,7 +118,9 @@ class DatapathPTWIO(implicit p: Parameters) extends CoreBundle()(p)
 class PTE(implicit p: Parameters) extends CoreBundle()(p) {
   val reserved_for_future = UInt(10.W)
   val ppn = UInt(44.W)
-  val reserved_for_software = Bits(2.W)
+  val reserved_for_software = Bits(1.W)
+  /* Deterministic Memory Bit */
+  val dm = Bool()
   /** dirty bit */
   val d = Bool()
   /** access bit */
