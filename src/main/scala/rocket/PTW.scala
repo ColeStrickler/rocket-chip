@@ -15,6 +15,7 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.util.property
 
 import scala.collection.mutable.ListBuffer
+import midas.targetutils.SynthesizePrintf
 
 /** PTE request from TLB to PTW
   *
@@ -169,6 +170,8 @@ class L2TLBEntry(nSets: Int)(implicit p: Parameters) extends CoreBundle()(p)
   val tagBits = maxSVAddrBits - pgIdxBits - idxBits + (if (usingHypervisor) 1 else 0)
   val tag = UInt(tagBits.W)
   val ppn = UInt(ppnBits.W)
+  /* deterministic memory bit */
+  val dm = Bool()
   /** dirty bit */
   val d = Bool()
   /** access bit */
@@ -230,6 +233,12 @@ class PTW(n: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(
       */
     val dpath = new DatapathPTWIO
   })
+
+
+  when (io.requestor.map(p => p.req.valid).reduce(_||_))
+  {
+    SynthesizePrintf("Got PTW req\n")
+  }
 
   val s_ready :: s_req :: s_wait1 :: s_dummy1 :: s_wait2 :: s_wait3 :: s_dummy2 :: s_fragment_superpage :: Nil = Enum(8)
   val state = RegInit(s_ready)
@@ -434,7 +443,9 @@ class PTW(n: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(
     // refill with r_pte(leaf pte)
     when (l2_refill && !invalidated) {
       val entry = Wire(new L2TLBEntry(nL2TLBSets))
+      SynthesizePrintf("entry.dm %d\n", entry.dm)
       entry.ppn := r_pte.ppn
+      entry.dm := r_pte.dm
       entry.d := r_pte.d
       entry.a := r_pte.a
       entry.u := r_pte.u
@@ -490,7 +501,13 @@ class PTW(n: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(
 
     val s2_pte = Wire(new PTE)
     val s2_hit_entry = Mux1H(s2_hit_vec, s2_entry_vec)
+    when (s2_hit_entry.dm === 1.U)
+    {
+      SynthesizePrintf("s2_pte %d -- 0x%x\n", s2_hit_entry.dm, s2_hit_entry.asUInt)
+    }
+    
     s2_pte.ppn := s2_hit_entry.ppn
+    s2_pte.dm := s2_hit_entry.dm
     s2_pte.d := s2_hit_entry.d
     s2_pte.a := s2_hit_entry.a
     s2_pte.g := Mux1H(s2_hit_vec, s2_g_vec)
