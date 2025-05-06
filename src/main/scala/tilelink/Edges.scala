@@ -357,7 +357,7 @@ class TLEdgeOut(
   extends TLEdge(client, manager, params, sourceInfo)
 {
   // Transfers
-  def AcquireBlock(fromSource: UInt, toAddress: UInt, lgSize: UInt, growPermissions: UInt) = {
+  def AcquireBlock(fromSource: UInt, toAddress: UInt, lgSize: UInt, growPermissions: UInt, dm : Bool = false.B) = {
     require (manager.anySupportAcquireB, s"TileLink: No managers visible from this edge support Acquires, but one of these clients would try to request one: ${client.clients}")
     val legal = manager.supportsAcquireBFast(toAddress, lgSize)
     val a = Wire(new TLBundleA(bundle))
@@ -371,6 +371,7 @@ class TLEdgeOut(
     a.mask    := mask(toAddress, lgSize)
     a.data    := DontCare
     a.corrupt := false.B
+    a.dm      := dm
     (legal, a)
   }
 
@@ -471,7 +472,7 @@ class TLEdgeOut(
   }
 
   // Accesses
-  def Get(fromSource: UInt, toAddress: UInt, lgSize: UInt) = {
+  def Get(fromSource: UInt, toAddress: UInt, lgSize: UInt, dm : Bool = false.B) = {
     require (manager.anySupportGet, s"TileLink: No managers visible from this edge support Gets, but one of these clients would try to request one: ${client.clients}")
     val legal = manager.supportsGetFast(toAddress, lgSize)
     val a = Wire(new TLBundleA(bundle))
@@ -485,33 +486,21 @@ class TLEdgeOut(
     a.mask    := mask(toAddress, lgSize)
     a.data    := DontCare
     a.corrupt := false.B
+    a.dm      := dm
     (legal, a)
   }
 
-  def Put(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt): (Bool, TLBundleA) =
+  def Put(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt) : (Bool, TLBundleA) =
     Put(fromSource, toAddress, lgSize, data, false.B)
 
   def Put(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, corrupt: Bool): (Bool, TLBundleA) = {
-    require (manager.anySupportPutFull, s"TileLink: No managers visible from this edge support Puts, but one of these clients would try to request one: ${client.clients}")
-    val legal = manager.supportsPutFullFast(toAddress, lgSize)
-    val a = Wire(new TLBundleA(bundle))
-    a.opcode  := TLMessages.PutFullData
-    a.param   := 0.U
-    a.size    := lgSize
-    a.source  := fromSource
-    a.address := toAddress
-    a.user    := DontCare
-    a.echo    := DontCare
-    a.mask    := mask(toAddress, lgSize)
-    a.data    := data
-    a.corrupt := corrupt
-    (legal, a)
+     Put(fromSource, toAddress, lgSize, data, mask(toAddress, lgSize), corrupt)
   }
 
   def Put(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, mask: UInt): (Bool, TLBundleA) =
     Put(fromSource, toAddress, lgSize, data, mask, false.B)
 
-  def Put(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, mask: UInt, corrupt: Bool): (Bool, TLBundleA) = {
+  def Put(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, mask: UInt, corrupt: Bool, dm: Bool = false.B): (Bool, TLBundleA) = {
     require (manager.anySupportPutPartial, s"TileLink: No managers visible from this edge support masked Puts, but one of these clients would try to request one: ${client.clients}")
     val legal = manager.supportsPutPartialFast(toAddress, lgSize)
     val a = Wire(new TLBundleA(bundle))
@@ -525,10 +514,11 @@ class TLEdgeOut(
     a.mask    := mask
     a.data    := data
     a.corrupt := corrupt
+    a.dm      := dm
     (legal, a)
   }
 
-  def Arithmetic(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, atomic: UInt, corrupt: Bool = false.B): (Bool, TLBundleA) = {
+  def Arithmetic(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, atomic: UInt, corrupt: Bool = false.B, dm: Bool = false.B): (Bool, TLBundleA) = {
     require (manager.anySupportArithmetic, s"TileLink: No managers visible from this edge support arithmetic AMOs, but one of these clients would try to request one: ${client.clients}")
     val legal = manager.supportsArithmeticFast(toAddress, lgSize)
     val a = Wire(new TLBundleA(bundle))
@@ -542,10 +532,11 @@ class TLEdgeOut(
     a.mask    := mask(toAddress, lgSize)
     a.data    := data
     a.corrupt := corrupt
+    a.dm      := dm
     (legal, a)
   }
 
-  def Logical(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, atomic: UInt, corrupt: Bool = false.B) = {
+  def Logical(fromSource: UInt, toAddress: UInt, lgSize: UInt, data: UInt, atomic: UInt, corrupt: Bool = false.B, dm : Bool = false.B ) = {
     require (manager.anySupportLogical, s"TileLink: No managers visible from this edge support logical AMOs, but one of these clients would try to request one: ${client.clients}")
     val legal = manager.supportsLogicalFast(toAddress, lgSize)
     val a = Wire(new TLBundleA(bundle))
@@ -559,6 +550,7 @@ class TLEdgeOut(
     a.mask    := mask(toAddress, lgSize)
     a.data    := data
     a.corrupt := corrupt
+    a.dm      := dm
     (legal, a)
   }
 

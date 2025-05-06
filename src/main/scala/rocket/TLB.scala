@@ -8,7 +8,7 @@ import chisel3.util._
 import chisel3.experimental.SourceInfo
 
 import org.chipsalliance.cde.config._
-
+import midas.targetutils.SynthesizePrintf
 import freechips.rocketchip.devices.debug.DebugModuleKey
 import freechips.rocketchip.diplomacy.RegionType
 import freechips.rocketchip.subsystem.CacheBlockBytes
@@ -22,6 +22,7 @@ import freechips.rocketchip.util.UIntToAugmentedUInt
 import freechips.rocketchip.util.UIntIsOneOf
 import freechips.rocketchip.util.SeqToAugmentedSeq
 import freechips.rocketchip.util.SeqBoolBitwiseOps
+import midas.targetutils.SynthesizePrintf
 
 case object PgLevels extends Field[Int](2)
 case object ASIdBits extends Field[Int](0)
@@ -75,6 +76,7 @@ class TLBExceptions extends Bundle {
 class TLBResp(lgMaxSize: Int = 3)(implicit p: Parameters) extends CoreBundle()(p) {
   // lookup responses
   val miss = Bool()
+  val dm = Bool()
   /** physical address */
   val paddr = UInt(paddrBits.W)
   val gpa = UInt(vaddrBitsExtended.W)
@@ -101,6 +103,7 @@ class TLBResp(lgMaxSize: Int = 3)(implicit p: Parameters) extends CoreBundle()(p
 
 class TLBEntryData(implicit p: Parameters) extends CoreBundle()(p) {
   val ppn = UInt(ppnBits.W)
+  val dm = Bool()
   /** pte.u user */
   val u = Bool()
   /** pte.g global */
@@ -471,6 +474,8 @@ class TLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge: T
     newEntry.paa := prot_aa
     newEntry.eff := prot_eff
     newEntry.fragmented_superpage := io.ptw.resp.bits.fragmented_superpage
+    newEntry.dm := pte.dm
+    SynthesizePrintf("L2TLB newEntry.dm 0x%x\n", pte.dm)
     // refill special_entry
     when (special_entry.nonEmpty.B && !io.ptw.resp.bits.homogeneous) {
       special_entry.foreach(_.insert(r_refill_tag, refill_v, io.ptw.resp.bits.level, newEntry))
@@ -501,6 +506,8 @@ class TLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge: T
   val normal_entries = entries.take(ordinary_entries.size)
   // parallel query PPN from [[all_entries]], if VM not enabled return VPN instead
   val ppn = Mux1H(hitsVec :+ !vm_enabled, (all_entries zip entries).map{ case (entry, data) => entry.ppn(vpn, data) } :+ vpn(ppnBits-1, 0))
+  val dm_val =  Mux1H(hitsVec :+ !vm_enabled, (all_entries zip entries).map{ case (entry, data) => data.dm} :+ false.B)
+
 
   val nPhysicalEntries = 1 + special_entry.size
   // generally PTW misaligned load exception.
@@ -659,6 +666,7 @@ class TLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge: T
     val offset = Mux(io.resp.gpa_is_pte, r_gpa(pgIdxBits-1, 0), io.req.bits.vaddr(pgIdxBits-1, 0))
     Cat(page, offset)
   }
+  io.resp.dm := dm_val
 
   io.ptw.req.valid := state === s_request
   io.ptw.req.bits.valid := !io.kill
