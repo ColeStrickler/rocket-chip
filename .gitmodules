@@ -14,3 +14,5 @@
 [submodule "src/main/scala/subsystem/RME-Firesim"]
 	path = src/main/scala/subsystem/RME-Firesim
 	url = https://github.com/ColeStrickler/RME-Firesim/tree/rme
+[submodule "generators/rocket-chip"]
+	url = https://github.com/ColeStrickler/rocket-chip
