@@ -15,7 +15,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.Location
 import subsystem.rme.RME
 import subsystem.rme.RelMemParams
-import midas.targetutils.SynthesizePrintf
+//import midas.targetutils.SynthesizePrintf
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.diplomacy.IdRange
 import subsystem.rme.subsystem.rme.TLSourceExpander
