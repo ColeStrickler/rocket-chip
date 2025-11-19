@@ -23,6 +23,8 @@ import subsystem.rme.subsystem.rme.TLSourceExpander
 
 
 import freechips.rocketchip.util.Location
+import subsystem.rme.subsystem.rme.DTUUncachedRegion
+
 
 /** Parameterization of the memory-side bus created for each memory channel */
 case class MemoryBusParams(
@@ -55,23 +57,28 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     addressPrefixNexusNode
   }
   val rme = Some(LazyModule(new RME(RelMemParams())))
+  val dtu_uncached_region = Some(LazyModule(new DTUUncachedRegion))
   private val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
 
 
-
+  //val dtu_uncached_region = LazyModule(new DTURegionManager)
   /*
     We expand the range of source IDs available for the RME so we can multiply requests, and
     send them concurrently
   */
   val numFetchUnits = 16
-
+  
+  
+  
+  //rme.get.dtu_uncached_region.node := xbar.node
+  //rme.get.dtu_cached_region.node := xbar.node
  // rme.get.manager :*= xbar.node
 
   val inwardNode: TLInwardNode =
     replicator.map(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all) :*=* _.node)
         .getOrElse(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all))
 
-  val outwardNode: TLOutwardNode = rme.get.node :*= TLSourceExpander(numFetchUnits*4).node :*= ProbePicker()  :*= xbar.node
+  val outwardNode: TLOutwardNode = rme.get.node :*= TLSourceExpander(5).node :*= ProbePicker()  :*= xbar.node
   def busView: TLEdge = xbar.node.edges.in.head
 
   val builtInDevices: BuiltInDevices = BuiltInDevices.attach(params, outwardNode)

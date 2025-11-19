@@ -45,6 +45,7 @@ class PeripheryBus(params: PeripheryBusParams, name: String)(implicit p: Paramet
     extends TLBusWrapper(params, name)
 {
   val rme = None
+  val dtu_uncached_region = None
   override lazy val desiredName = s"PeripheryBus_$name"
   private val replicator = params.replication.map(r => LazyModule(new RegionReplicator(r)))
   val prefixNode = replicator.map { r =>

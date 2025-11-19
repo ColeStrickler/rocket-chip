@@ -178,6 +178,7 @@ trait HasTileParameters extends HasNonDiplomaticTileParameters {
   def vaddrBits: Int =
     if (usingVM) {
       val v = maxHVAddrBits
+      println(f"\n\n\nv=${v}, xLen=${xLen}, paddrBits=${paddrBits}\n\n\n")
       require(v == xLen || xLen > v && v > paddrBits)
       v
     } else {

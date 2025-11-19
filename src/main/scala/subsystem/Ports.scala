@@ -62,7 +62,7 @@ trait CanHaveMasterAXI4MemPort { this: BaseSubsystem =>
     Seq.tabulate(nMemoryChannels) { channel =>
       val base = AddressSet.misaligned(memPortParams.base, memPortParams.size)
       val filter = AddressSet(channel * mbus.blockBytes, ~((nMemoryChannels-1) * mbus.blockBytes))
-
+      
       AXI4SlavePortParameters(
         slaves = Seq(AXI4SlaveParameters(
           address       = base.flatMap(_.intersect(filter)),

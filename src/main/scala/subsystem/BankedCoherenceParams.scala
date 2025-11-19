@@ -64,6 +64,7 @@ case class CoherenceManagerWrapperParams(
 class CoherenceManagerWrapper(params: CoherenceManagerWrapperParams, context: HasTileLinkLocations)(implicit p: Parameters) extends TLBusWrapper(params, params.name) {
   val (tempIn, tempOut, halt) = params.coherenceManager(context)
   val rme = None
+  val dtu_uncached_region = None
   private val coherent_jbar = LazyModule(new TLJbar)
   def busView: TLEdge = coherent_jbar.node.edges.out.head
   val inwardNode = tempIn :*= coherent_jbar.node

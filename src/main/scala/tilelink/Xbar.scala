@@ -96,7 +96,9 @@ object TLXbar
     val ranges = (tuples zip starts) map { case ((sz, i), st) =>
       (if (sz == 0) IdRange(0, 0) else IdRange(st, st + sz), i)
     }
-    ranges.sortBy(_._2).map(_._1) // Restore orignal order
+    val idrange = ranges.sortBy(_._2).map(_._1) // Restore orignal order
+    println(f"TLXBar ${idrange}}")
+    idrange
   }
 
   def relabeler() = {

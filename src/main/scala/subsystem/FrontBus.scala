@@ -8,6 +8,7 @@ import org.chipsalliance.diplomacy.lazymodule._
 import freechips.rocketchip.devices.tilelink.{BuiltInErrorDeviceParams, BuiltInZeroDeviceParams, BuiltInDevices, HasBuiltInDeviceParams}
 import freechips.rocketchip.tilelink.{HasTLBusParams, TLBusWrapper, TLBusWrapperInstantiationLike, HasTLXbarPhy}
 import freechips.rocketchip.util.{Location}
+import _root_.subsystem.rme.subsystem.rme.{DTUUncachedRegion}
 
 case class FrontBusParams(
     beatBytes: Int,
@@ -31,6 +32,8 @@ class FrontBus(params: FrontBusParams, name: String = "front_bus")(implicit p: P
     extends TLBusWrapper(params, name)
     with HasTLXbarPhy {
       val rme = None
+
+      val dtu_uncached_region = None
   val builtInDevices: BuiltInDevices = BuiltInDevices.attach(params, outwardNode)
   val prefixNode = None
 }

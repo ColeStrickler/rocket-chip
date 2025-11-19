@@ -271,6 +271,7 @@ class AddressAdjusterWrapper(params: AddressAdjusterWrapperParams, name: String)
   private val address_adjuster = params.replication.map { r => LazyModule(new AddressAdjuster(r, params.forceLocal, params.localBaseAddressDefault, params.ordered)) }
   private val viewNode = TLIdentityNode() 
   val rme = None
+  val dtu_uncached_region = None
   val inwardNode: TLInwardNode = address_adjuster.map(_.node :*=* TLFIFOFixer(params.policy) :*=* viewNode).getOrElse(viewNode)
   def outwardNode: TLOutwardNode = address_adjuster.map(_.node).getOrElse(viewNode)
   def busView: TLEdge = viewNode.edges.in.head
@@ -301,6 +302,7 @@ case class TLJBarWrapperParams(
 class TLJBarWrapper(params: TLJBarWrapperParams, name: String)(implicit p: Parameters) extends TLBusWrapper(params, name) {
   private val jbar = LazyModule(new TLJbar)
   val rme = None
+  val dtu_uncached_region = None
   val inwardNode: TLInwardNode = jbar.node
   val outwardNode: TLOutwardNode = jbar.node
   def busView: TLEdge = jbar.node.edges.in.head

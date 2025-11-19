@@ -254,14 +254,49 @@ class SimpleBus(devname: String, devcompat: Seq[String], offset: BigInt = 0) ext
 
   def ranges = Seq(Resource(this, "ranges"))
 }
+
+class ReservedMemory extends Device with DeviceRegName
+{
+  def describe(resources: ResourceBindings): Description = {
+
+    Description(describeName("reserved", resources), ListMap(
+        "#address-cells" -> Seq(ResourceInt(BigInt(2))),
+        "#size-cells" -> Seq(ResourceInt(BigInt(2))), 
+        "ranges" -> Seq(),
+      ))
+  }
+}
+
 /** A generic memory block. */
 class MemoryDevice extends Device with DeviceRegName
 {
   def describe(resources: ResourceBindings): Description = {
-    Description(describeName("memory", resources), ListMap(
-      "reg"         -> resources.map.filterKeys(DiplomacyUtils.regFilter).flatMap(_._2).map(_.value).toList,
-      "device_type" -> Seq(ResourceString("memory"))))
+
+    val baseMap = ListMap(
+    "reg"         -> resources.map.filterKeys(DiplomacyUtils.regFilter).flatMap(_._2).map(_.value).toList,
+    "device_type" -> Seq(ResourceString("memory"))
+  )
+
+    // Conditionally add "no-map"
+    val finalMap = if (hasReservedRange) {
+      baseMap + ("no-map" -> Seq())
+    } else {
+      baseMap
+    }
+
+    Description(describeName("memory", resources), finalMap)
   }
+
+  override def parent : Option[Device] = {
+    if (hasReservedRange)
+    {
+       val dev = Some(new SimpleDevice("reserved-memory", Seq("memory")))
+       dev
+    }
+    else
+      None
+  }
+
 }
 
 case class Resource(owner: Device, key: String)
@@ -393,10 +428,14 @@ trait BindingScope
       val reserved = bindings.map.filterKeys{case (p) => p == "reserved" }
       val reservedRange = reserved.get("reserved").getOrElse(Seq())
       val ranges = reservedRange.flatMap{case range => Seq(range.value.asInstanceOf[ResourceAddress])}
-      assert(ranges.size == 1)
-      val addrRange = ranges(0)
-      assert(addrRange.address.size == 1)
-      val addrSet = addrRange.address(0)
+      println(ranges)
+      //assert(ranges.size == 1)
+
+      for (i <-0 until ranges.length)
+      {
+        val addrRange = ranges(i)
+      //assert(addrRange.address.size == 1)
+      val addrSet = addrRange.address(i)
       
 
       val resMapping : Map[String, Seq[ResourceValue]] = Map(
@@ -410,9 +449,10 @@ trait BindingScope
       
       val reservedRegionMap : Map[String, Seq[ResourceValue]] = Map(
         "reg" -> Seq(addrRange),
-        //"no-map" -> Seq(),
+        "no-map" -> Seq(),
       )
      
+
 
       val resRegionDesc = Description("reserved-memory/" + "memory@" + addrSet.base.toString(16), reservedRegionMap)
       val reservedMemDesc = Description("reserved-memory", resMapping)
@@ -420,7 +460,9 @@ trait BindingScope
       val dummyDev2 = new SimpleDevice("", Seq("dummy")) 
       descs += ((dummyDev2,reservedMemDesc ))
       descs += ((dummyDev, resRegionDesc))
-      Seq(reservedMemDesc, resRegionDesc)
+      }
+      Seq()
+      //Seq(reservedMemDesc, resRegionDesc)
     }
 
     

@@ -603,6 +603,7 @@ class TLSlavePortParameters private(
   val anySupportHint       = !anySupportClaims.hint.none
 
   // Supporting Acquire means being routable for GrantAck
+  println(f"${endSinkId}  ----- ${!anySupportAcquireB}")
   require ((endSinkId == 0) == !anySupportAcquireB)
 
   // These return Option[TLSlaveParameters] for your convenience
