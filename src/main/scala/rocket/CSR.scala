@@ -374,16 +374,33 @@ class VType(implicit p: Parameters) extends CoreBundle {
   }
 }
 
+case class CustomCounterIO()(implicit p: Parameters) extends Bundle
+{
+    val robFull = Bool()
+    val robEmpty = Bool()
+    val brMispredict = Bool()
+    val l1Imiss = Bool()
+    val l1Dmiss = Bool()
+    val l1DRelease = Bool()
+    val iTLBMiss = Bool()
+    val dTLBMiss = Bool()
+    val l2TLBMiss = Bool()
+}
+
+
 class CSRFile(
   perfEventSets: EventSets = new EventSets(Seq()),
   customCSRs: Seq[CustomCSR] = Nil,
   roccCSRs: Seq[CustomCSR] = Nil,
-  hasBeu: Boolean = false)(implicit p: Parameters)
+  hasBeu: Boolean = false,
+  customCounters: Boolean = false,
+  )(implicit p: Parameters)
     extends CoreModule()(p)
     with HasCoreParameters {
   val io = IO(new CSRFileIO(hasBeu) {
     val customCSRs = Vec(CSRFile.this.customCSRs.size, new CustomCSRIO)
     val roccCSRs = Vec(CSRFile.this.roccCSRs.size, new CustomCSRIO)
+    val customCounter = Input(CustomCounterIO())
   })
 
   io.rw_stall := false.B
@@ -590,6 +607,19 @@ class CSRFile(
   val reg_mcountinhibit = RegInit(0.U((CSR.firstHPM + nPerfCounters).W))
   io.inhibit_cycle := reg_mcountinhibit(0)
   val reg_instret = WideCounter(64, io.retire, inhibit = reg_mcountinhibit(2))
+
+  val reg_robFull  = if (customCounters) Some(WideCounter(64, io.customCounter.robFull.asUInt)) else None
+  val reg_robEmpty = if (customCounters) Some(WideCounter(64, io.customCounter.robEmpty.asUInt)) else None
+  val reg_brMispredict = if (customCounters) Some(WideCounter(64, io.customCounter.brMispredict.asUInt)) else None
+  val reg_l1Imiss = if (customCounters) Some(WideCounter(64, io.customCounter.l1Imiss.asUInt)) else None
+  val reg_l1Dmiss = if (customCounters) Some(WideCounter(64, io.customCounter.l1Dmiss.asUInt)) else None
+  val reg_l1DRelease = if (customCounters) Some(WideCounter(64, io.customCounter.l1DRelease.asUInt)) else None
+  val reg_iTLBMiss = if (customCounters) Some(WideCounter(64, io.customCounter.iTLBMiss.asUInt)) else None
+  val reg_dTLBMiss = if (customCounters) Some(WideCounter(64, io.customCounter.dTLBMiss.asUInt)) else None
+  val reg_l2TLBMiss = if (customCounters) Some(WideCounter(64, io.customCounter.l2TLBMiss.asUInt)) else None
+  
+
+
   val reg_cycle = if (enableCommitLog) WideCounter(64, io.retire,     inhibit = reg_mcountinhibit(0))
     else withClock(io.ungated_clock) { WideCounter(64, !io.csr_stall, inhibit = reg_mcountinhibit(0)) }
   val reg_hpmevent = io.counters.map(c => RegInit(0.U(xLen.W)))
@@ -722,6 +752,26 @@ class CSRFile(
         read_mapping += (i + CSR.firstMHPCH) -> (c >> 32) // mhpmcounterNh
         read_mapping += (i + CSR.firstHPCH) -> (c >> 32) // hpmcounterNh
       }
+    }
+
+    /*
+      Add Custom counters to csr read
+
+      the CSR address encodes the privilege level required to access:
+        def mode(addr: UInt): UInt = addr(modeLSB + PRV.SZ - 1, modeLSB)
+
+
+    */
+    if (customCounters) {
+      read_mapping += 0x520 -> reg_robFull.get
+      read_mapping += 0x521 -> reg_robEmpty.get
+      read_mapping += 0x522 -> reg_brMispredict.get
+      read_mapping += 0x523 -> reg_l1Imiss.get
+      read_mapping += 0x524 -> reg_l1Dmiss.get
+      read_mapping += 0x525 -> reg_l1DRelease.get
+      read_mapping += 0x526 -> reg_iTLBMiss.get
+      read_mapping += 0x527 -> reg_dTLBMiss.get
+      read_mapping += 0x528 -> reg_l2TLBMiss.get
     }
 
     if (usingUser) {
