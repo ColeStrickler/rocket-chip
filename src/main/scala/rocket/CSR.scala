@@ -385,6 +385,8 @@ case class CustomCounterIO()(implicit p: Parameters) extends Bundle
     val iTLBMiss = Bool()
     val dTLBMiss = Bool()
     val l2TLBMiss = Bool()
+    val fpIssueFull = UInt(5.W)
+    val intIssueFull = UInt(5.W)
 }
 
 
@@ -617,7 +619,18 @@ class CSRFile(
   val reg_iTLBMiss = if (customCounters) Some(WideCounter(64, io.customCounter.iTLBMiss.asUInt)) else None
   val reg_dTLBMiss = if (customCounters) Some(WideCounter(64, io.customCounter.dTLBMiss.asUInt)) else None
   val reg_l2TLBMiss = if (customCounters) Some(WideCounter(64, io.customCounter.l2TLBMiss.asUInt)) else None
+  val reg_fpIssueStall = if (customCounters)  {
+    val r = Some(RegInit(0.U(64.W)))
+    r.get := r.get + io.customCounter.fpIssueFull  
+    r
+  } else None
+  val reg_intIssueStall = if (customCounters) {
+    val r = Some(RegInit(0.U(64.W)))
+    r.get := r.get + io.customCounter.intIssueFull
+    r
+  } else None
   
+
 
 
   val reg_cycle = if (enableCommitLog) WideCounter(64, io.retire,     inhibit = reg_mcountinhibit(0))
@@ -763,15 +776,17 @@ class CSRFile(
 
     */
     if (customCounters) {
-      read_mapping += 0x520 -> reg_robFull.get
-      read_mapping += 0x521 -> reg_robEmpty.get
-      read_mapping += 0x522 -> reg_brMispredict.get
-      read_mapping += 0x523 -> reg_l1Imiss.get
-      read_mapping += 0x524 -> reg_l1Dmiss.get
-      read_mapping += 0x525 -> reg_l1DRelease.get
-      read_mapping += 0x526 -> reg_iTLBMiss.get
-      read_mapping += 0x527 -> reg_dTLBMiss.get
-      read_mapping += 0x528 -> reg_l2TLBMiss.get
+      read_mapping += 0x020 -> reg_robFull.get
+      read_mapping += 0x021 -> reg_robEmpty.get
+      read_mapping += 0x022 -> reg_brMispredict.get
+      read_mapping += 0x023 -> reg_l1Imiss.get
+      read_mapping += 0x024 -> reg_l1Dmiss.get
+      read_mapping += 0x025 -> reg_l1DRelease.get
+      read_mapping += 0x026 -> reg_iTLBMiss.get
+      read_mapping += 0x027 -> reg_dTLBMiss.get
+      read_mapping += 0x028 -> reg_l2TLBMiss.get
+      read_mapping += 0x029 -> reg_fpIssueStall.get
+      read_mapping += 0x02a -> reg_intIssueStall.get
     }
 
     if (usingUser) {
