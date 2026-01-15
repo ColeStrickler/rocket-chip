@@ -335,6 +335,21 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   val id_csr_flush = id_system_insn || (id_csr_en && !id_csr_ren && csr.io.decode(0).write_flush)
   val id_set_vconfig = Seq(Instructions.VSETVLI, Instructions.VSETIVLI, Instructions.VSETVL).map(_ === id_inst(0)).orR && usingVector.B
 
+
+    csr.io.customCounter.robFull := false.B
+    csr.io.customCounter.robEmpty := false.B
+    csr.io.customCounter.brMispredict := false.B
+    csr.io.customCounter.l1Imiss := false.B
+    csr.io.customCounter.l1Dmiss := false.B
+    csr.io.customCounter.l1DRelease := false.B
+    csr.io.customCounter.iTLBMiss := false.B
+    csr.io.customCounter.dTLBMiss := false.B
+    csr.io.customCounter.l2TLBMiss := false.B
+    csr.io.customCounter.fpIssueFull := 0.U
+    csr.io.customCounter.intIssueFull := 0.U
+
+
+
   id_ctrl.vec := false.B
   if (usingVector) {
     val v_decode = rocketParams.vector.get.decoder(p)
