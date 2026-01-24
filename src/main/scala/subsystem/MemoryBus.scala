@@ -78,7 +78,7 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     replicator.map(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all) :*=* _.node)
         .getOrElse(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all))
 
-  val outwardNode: TLOutwardNode = rme.get.node :*= TLSourceExpander(5).node :*= ProbePicker()  :*= xbar.node
+  val outwardNode: TLOutwardNode = rme.get.node :*= ProbePicker()  :*= xbar.node
   def busView: TLEdge = xbar.node.edges.in.head
 
   val builtInDevices: BuiltInDevices = BuiltInDevices.attach(params, outwardNode)
