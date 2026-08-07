@@ -172,16 +172,21 @@ trait HasTileParameters extends HasNonDiplomaticTileParameters {
   protected def tlBundleParams = p(TileVisibilityNodeKey).edges.out.head.bundle
   lazy val paddrBits: Int = {
     val bits = tlBundleParams.addressBits
+    println(f"bits ${bits}, max ${maxPAddrBits}")
     require(bits <= maxPAddrBits, s"Requested $bits paddr bits, but since xLen is $xLen only $maxPAddrBits will fit")
     bits
   }
   def vaddrBits: Int =
     if (usingVM) {
+      throw new RuntimeException("MY MODIFIED BASETILE IS RUNNING")
       val v = maxHVAddrBits
-      //println(f"\n\n\nv=${v}, xLen=${xLen}, paddrBits=${paddrBits}\n\n\n")
-      require(v == xLen || xLen > v && v > paddrBits)
+      println(f"\n\n\nv=${v}, xLen=${xLen}, paddrBits=${paddrBits}\n\n\n")
+      require(v == xLen || xLen > v && v > paddrBits,
+          s"v=$v xLen=$xLen paddrBits=$paddrBits pgLevels=$pgLevels"
+      )
       v
     } else {
+      throw new RuntimeException("MY MODIFIED BASETILE IS RUNNING")
       // since virtual addresses sign-extend but physical addresses
       // zero-extend, make room for a zero sign bit for physical addresses
       (paddrBits + 1) min xLen

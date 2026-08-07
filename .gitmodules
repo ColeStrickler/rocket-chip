@@ -13,4 +13,4 @@
 	branch = master
 [submodule "src/main/scala/subsystem/RME-Firesim"]
 	path = src/main/scala/subsystem/RME-Firesim
-	url = https://github.com/ColeStrickler/RME-Firesim/tree/rme
+	url = https://github.com/ColeStrickler/RME-Firesim.git
