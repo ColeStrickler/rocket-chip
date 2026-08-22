@@ -14,6 +14,14 @@ import freechips.rocketchip.tilelink.{
   TLFIFOFixer, TLTempNode
 }
 import freechips.rocketchip.util.Location
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util.Location
+import _root_.subsystem.rme.RME
+import _root_.subsystem.rme.RelMemParams
+import midas.targetutils.SynthesizePrintf
+import freechips.rocketchip.subsystem._
+import freechips.rocketchip.diplomacy.IdRange
+import _root_.subsystem.rme.TLSourceExpander
 
 case class SystemBusParams(
     beatBytes: Int,
@@ -38,6 +46,8 @@ case class SystemBusParams(
 class SystemBus(params: SystemBusParams, name: String = "system_bus")(implicit p: Parameters)
     extends TLBusWrapper(params, name)
 {
+    val rme = None// Some(LazyModule(new RME(RelMemParams())))
+  val dtu_uncached_region = None
   private val replicator = params.replication.map(r => LazyModule(new RegionReplicator(r)))
   val prefixNode = replicator.map { r =>
     r.prefix := addressPrefixNexusNode
@@ -45,6 +55,8 @@ class SystemBus(params: SystemBusParams, name: String = "system_bus")(implicit p
   }
 
   private val system_bus_xbar = LazyModule(new TLXbar(policy = params.policy, nameSuffix = Some(name)))
+
+
   val inwardNode: TLInwardNode = system_bus_xbar.node :=* TLFIFOFixer(TLFIFOFixer.allVolatile) :=* replicator.map(_.node).getOrElse(TLTempNode())
   val outwardNode: TLOutwardNode = system_bus_xbar.node
   def busView: TLEdge = system_bus_xbar.node.edges.in.head

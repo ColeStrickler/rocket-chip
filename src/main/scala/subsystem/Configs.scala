@@ -35,7 +35,7 @@ class BaseSubsystemConfig extends Config ((site, here, up) => {
       .map(_.tileParams.tileId) :+ 0).max+1)
   // Interconnect parameters
   case SystemBusKey => SystemBusParams(
-    beatBytes = 8,
+    beatBytes = 16,
     blockBytes = site(CacheBlockBytes))
   case ControlBusKey => PeripheryBusParams(
     beatBytes = 8,
@@ -48,7 +48,7 @@ class BaseSubsystemConfig extends Config ((site, here, up) => {
     blockBytes = site(CacheBlockBytes),
     dtsFrequency = Some(100000000)) // Default to 100 MHz pbus clock
   case MemoryBusKey => MemoryBusParams(
-    beatBytes = 8,
+    beatBytes = 16,
     blockBytes = site(CacheBlockBytes))
   case FrontBusKey => FrontBusParams(
     beatBytes = 8,

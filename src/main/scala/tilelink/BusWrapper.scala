@@ -10,7 +10,7 @@ import org.chipsalliance.diplomacy._
 import org.chipsalliance.diplomacy.bundlebridge._
 import org.chipsalliance.diplomacy.lazymodule._
 import org.chipsalliance.diplomacy.nodes._
-
+import subsystem.rme._
 import freechips.rocketchip.diplomacy.AddressSet
 
 // TODO This class should be moved to package subsystem to resolve
@@ -48,6 +48,7 @@ abstract class TLBusWrapper(params: HasTLBusParams, val busName: String)(implici
     extends ClockDomain
     with HasTLBusParams
     with CanHaveBuiltInDevices
+    with CanHaveRME
 {
   private val clockGroupAggregator = LazyModule(new ClockGroupAggregator(busName){ override def shouldBeInlined = true }).suggestName(busName + "_clock_groups")
   private val clockGroup = LazyModule(new ClockGroup(busName){ override def shouldBeInlined = true })
@@ -276,6 +277,9 @@ class AddressAdjusterWrapper(params: AddressAdjusterWrapperParams, name: String)
     a.prefix := addressPrefixNexusNode
     addressPrefixNexusNode
   }
+
+    val rme = None
+  val dtu_uncached_region = None
   val builtInDevices = BuiltInDevices.none
   override def shouldBeInlined = !params.replication.isDefined
 }
@@ -298,6 +302,8 @@ case class TLJBarWrapperParams(
 
 class TLJBarWrapper(params: TLJBarWrapperParams, name: String)(implicit p: Parameters) extends TLBusWrapper(params, name) {
   private val jbar = LazyModule(new TLJbar)
+    val rme = None
+  val dtu_uncached_region = None
   val inwardNode: TLInwardNode = jbar.node
   val outwardNode: TLOutwardNode = jbar.node
   def busView: TLEdge = jbar.node.edges.in.head
