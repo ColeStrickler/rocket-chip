@@ -35,7 +35,7 @@ class BaseSubsystemConfig extends Config ((site, here, up) => {
       .map(_.tileParams.tileId) :+ 0).max+1)
   // Interconnect parameters
   case SystemBusKey => SystemBusParams(
-    beatBytes = 16,
+    beatBytes = 8,
     blockBytes = site(CacheBlockBytes))
   case ControlBusKey => PeripheryBusParams(
     beatBytes = 8,

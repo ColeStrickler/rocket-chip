@@ -18,7 +18,7 @@ import _root_.subsystem.rme.RelMemParams
 import midas.targetutils.SynthesizePrintf
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.diplomacy.IdRange
-import _root_.subsystem.rme.TLSourceExpander
+import subsystem.rme.TLSourceExpander
 
 
 
@@ -56,8 +56,8 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     r.prefix := addressPrefixNexusNode
     addressPrefixNexusNode
   }
-  //val rme = Some(LazyModule(new RME(RelMemParams())))
-  val rme = None
+  val rme = None //Some(LazyModule(new RME(RelMemParams())))
+ // val rme = None
   
   val dtu_uncached_region = Some(LazyModule(new DTUUncachedRegion))
   private val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
@@ -79,7 +79,9 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
     replicator.map(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all) :*=* _.node)
         .getOrElse(xbar.node :*=* TLFIFOFixer(TLFIFOFixer.all))
 
-  val outwardNode: TLOutwardNode =  /*rme.get.node :*= TLSourceExpander(1).node :*=*/ ProbePicker()  :*= xbar.node
+ // val outwardNode: TLOutwardNode =  rme.get.node :*= TLSourceExpander(1).node :*=  ProbePicker()  :*= xbar.node
+
+ val outwardNode: TLOutwardNode =  ProbePicker()  :*= xbar.node
   def busView: TLEdge = xbar.node.edges.in.head
 
   val builtInDevices: BuiltInDevices = BuiltInDevices.attach(params, outwardNode)

@@ -21,7 +21,7 @@ import _root_.subsystem.rme.RelMemParams
 import midas.targetutils.SynthesizePrintf
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.diplomacy.IdRange
-import _root_.subsystem.rme.TLSourceExpander
+import subsystem.rme.TLSourceExpander
 
 case class SystemBusParams(
     beatBytes: Int,
