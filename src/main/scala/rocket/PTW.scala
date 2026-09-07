@@ -13,6 +13,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import freechips.rocketchip.util.property
+import midas.targetutils.SynthesizePrintf
 
 import scala.collection.mutable.ListBuffer
 
@@ -119,6 +120,8 @@ class PTE(implicit p: Parameters) extends CoreBundle()(p) {
   val reserved_for_future = UInt(10.W)
   val ppn = UInt(44.W)
   val reserved_for_software = Bits(2.W)
+  /** Experimental deterministic-memory attribute in RSW[0] (PTE bit 8). */
+  def dm = reserved_for_software(0)
   /** dirty bit */
   val d = Bool()
   /** access bit */
@@ -179,6 +182,8 @@ class L2TLBEntry(nSets: Int)(implicit p: Parameters) extends CoreBundle()(p)
   val w = Bool()
   /** whether the page is readable */
   val r = Bool()
+  /** Deterministic-memory attribute cached from the leaf PTE. */
+  val dm = Bool()
 
 }
 /** PTW contains L2TLB, and performs page table walk for high level TLB, and cache queries from L1 TLBs(I$, D$, RoCC)
@@ -439,6 +444,7 @@ class PTW(n: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(
       entry.x := r_pte.x
       entry.w := r_pte.w
       entry.r := r_pte.r
+      entry.dm := r_pte.dm
       entry.tag := r_tag
       // if all the way are valid, use plru to select one way to be replaced,
       // otherwise use PriorityEncoderOH to select one
@@ -498,7 +504,7 @@ class PTW(n: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(
     s2_pte.r := s2_hit_entry.r
     s2_pte.v := true.B
     s2_pte.reserved_for_future := 0.U
-    s2_pte.reserved_for_software := 0.U
+    s2_pte.reserved_for_software := Cat(0.U(1.W), s2_hit_entry.dm)
 
     for (way <- 0 until coreParams.nL2TLBWays) {
       ccover(s2_hit && s2_hit_vec(way), s"L2_TLB_HIT_WAY$way", s"L2 TLB hit way$way")
@@ -584,6 +590,11 @@ class PTW(n: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(
     io.requestor(i).hstatus := io.dpath.hstatus
     io.requestor(i).gstatus := io.dpath.gstatus
     io.requestor(i).pmp := io.dpath.pmp
+  }
+
+  when (resp_valid.asUInt.orR) {
+    SynthesizePrintf("[DM_PTW_LEAF] vpn=0x%x ppn=0x%x dm=%d level=%d\n",
+      r_req.addr, r_pte.ppn, r_pte.dm, max_count)
   }
 
   // control state machine

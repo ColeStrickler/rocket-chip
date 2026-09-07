@@ -13,7 +13,7 @@ import freechips.rocketchip.tilelink.{
 }
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.Location
-import _root_.subsystem.rme.RME
+import _root_.subsystem.rme.{RME, RMEKey}
 import _root_.subsystem.rme.RelMemParams
 import midas.targetutils.SynthesizePrintf
 import freechips.rocketchip.subsystem._
@@ -59,7 +59,7 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
   val rme = None //Some(LazyModule(new RME(RelMemParams())))
  // val rme = None
   
-  val dtu_uncached_region = Some(LazyModule(new DTUUncachedRegion))
+  val dtu_uncached_region = p(RMEKey).map(_ => LazyModule(new DTUUncachedRegion))
   private val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
 
 

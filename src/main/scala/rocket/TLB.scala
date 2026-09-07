@@ -95,6 +95,8 @@ class TLBResp(lgMaxSize: Int = 3)(implicit p: Parameters) extends CoreBundle()(p
   /** size/cmd of request that generated this response*/
   val size = UInt(log2Ceil(lgMaxSize + 1).W)
   val cmd = UInt(M_SZ.W)
+  /** Deterministic-memory attribute of the translated leaf page. */
+  val dm = Bool()
 
 }
 
@@ -146,6 +148,8 @@ class TLBEntryData(implicit p: Parameters) extends CoreBundle()(p) {
   val c = Bool()
   /** fragmented_superpage support */
   val fragmented_superpage = Bool()
+  /** Deterministic-memory attribute cached from PTE RSW[0]. */
+  val dm = Bool()
 }
 
 /** basic cell for TLB data */
@@ -470,6 +474,7 @@ class TLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge: T
     newEntry.paa := prot_aa
     newEntry.eff := prot_eff
     newEntry.fragmented_superpage := io.ptw.resp.bits.fragmented_superpage
+    newEntry.dm := pte.dm
     // refill special_entry
     when (special_entry.nonEmpty.B && !io.ptw.resp.bits.homogeneous) {
       special_entry.foreach(_.insert(r_refill_tag, refill_v, io.ptw.resp.bits.level, newEntry))
@@ -535,6 +540,7 @@ class TLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge: T
   val eff_array = Cat(Fill(nPhysicalEntries, prot_eff), normal_entries.map(_.eff).asUInt)
   // cacheable
   val c_array = Cat(Fill(nPhysicalEntries, cacheable), normal_entries.map(_.c).asUInt)
+  val dm_array = Cat(Fill(nPhysicalEntries, false.B), normal_entries.map(_.dm).asUInt)
   // put partial
   val ppp_array = Cat(Fill(nPhysicalEntries, prot_pp), normal_entries.map(_.ppp).asUInt)
   // atomic arithmetic
@@ -652,6 +658,7 @@ class TLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge: T
   io.resp.paddr := Cat(ppn, io.req.bits.vaddr(pgIdxBits-1, 0))
   io.resp.size := io.req.bits.size
   io.resp.cmd := io.req.bits.cmd
+  io.resp.dm := (dm_array & hits).orR
   io.resp.gpa_is_pte := vstage1_en && r_gpa_is_pte
   io.resp.gpa := {
     val page = Mux(!vstage1_en, Cat(bad_gpa, vpn), r_gpa >> pgIdxBits)

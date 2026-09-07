@@ -11,6 +11,10 @@ import chisel3.reflect.DataMirror
 
 abstract class TLBundleBase(val params: TLBundleParameters) extends Bundle
 
+/** Page-granular deterministic-memory attribute carried on demand requests. */
+case object DeterministicMemory extends ControlKey[Bool]("deterministic_memory")
+case class DeterministicMemoryField() extends SimpleBundleField(DeterministicMemory)(Output(Bool()), false.B)
+
 // common combos in lazy policy:
 //   Put + Acquire
 //   Release + AccessAck
