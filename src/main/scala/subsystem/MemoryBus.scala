@@ -59,7 +59,7 @@ class MemoryBus(params: MemoryBusParams, name: String = "memory_bus")(implicit p
   val rme = None //Some(LazyModule(new RME(RelMemParams())))
  // val rme = None
   
-  val dtu_uncached_region = Some(LazyModule(new DTUUncachedRegion))
+  val dtu_uncached_region = None //Some(LazyModule(new DTUUncachedRegion))
   private val xbar = LazyModule(new TLXbar(nameSuffix = Some(name))).suggestName(busName + "_xbar")
 
 
