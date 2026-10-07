@@ -48,7 +48,7 @@ abstract class TLBusWrapper(params: HasTLBusParams, val busName: String)(implici
     extends ClockDomain
     with HasTLBusParams
     with CanHaveBuiltInDevices
-    with CanHaveRME
+    //with CanHaveRME
 {
   private val clockGroupAggregator = LazyModule(new ClockGroupAggregator(busName){ override def shouldBeInlined = true }).suggestName(busName + "_clock_groups")
   private val clockGroup = LazyModule(new ClockGroup(busName){ override def shouldBeInlined = true })

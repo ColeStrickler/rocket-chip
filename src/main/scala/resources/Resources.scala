@@ -222,6 +222,11 @@ class SimpleDevice(val devname: String, devcompat: Seq[String]) extends Device
   }
 }
 
+trait HasReservedAddressRange extends Device {
+  hasReservedRange = true
+}
+
+
 /** A simple bus
   * @param devname      the base device named used in device name generation.
   * @param devcompat    a list of compatible devices. See device tree property "compatible".
